@@ -31,12 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package org.firstinspires.ftc.teamcode._TeleOp;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode._Libs.AutoLib;
+import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
 
 /*
@@ -59,8 +61,7 @@ public class  AbsoluteGyroDrive1 extends OpMode {
 
 	AutoLib.AzimuthTimedDriveStep mStep;
 
-	ModernRoboticsI2cGyro mGyro;            // gyro to use for heading information
-	SensorLib.CorrectedMRGyro mCorrGyro;    // gyro corrector object
+	BNO055IMUHeadingSensor mIMU;
 
 	DcMotor mMotors[];
 
@@ -82,7 +83,7 @@ public class  AbsoluteGyroDrive1 extends OpMode {
 		 */
 		try {
 			AutoLib.HardwareFactory mf = null;
-			final boolean debug = true;
+			final boolean debug = false;
 			if (debug)
 				mf = new AutoLib.TestHardwareFactory(this);
 			else
@@ -97,19 +98,16 @@ public class  AbsoluteGyroDrive1 extends OpMode {
 			(mMotors[2] = mf.getDcMotor("fl")).setDirection(DcMotor.Direction.REVERSE);
 			(mMotors[3] = mf.getDcMotor("bl")).setDirection(DcMotor.Direction.REVERSE);
 
-			// get hardware gyro
-			mGyro = (ModernRoboticsI2cGyro) mf.getGyro("gyro");
-
-			// wrap gyro in an object that calibrates it and corrects its output
-			mCorrGyro = new SensorLib.CorrectedMRGyro(mGyro);
-			mCorrGyro.calibrate();
+			// get hardware IMU and wrap gyro in HeadingSensor object usable below
+			mIMU = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
+			mIMU.init(7);  // orientation of REV hub in my ratbot
 		}
 		catch (IllegalArgumentException iax) {
 			bDebug = true;
 		}
 
 		// create a Step that we will use in teleop mode
-		mStep = new AutoLib.AzimuthTimedDriveStep(this, 0, mCorrGyro, null, mMotors, 0, 10000, false);
+		mStep = new AutoLib.AzimuthTimedDriveStep(this, 0, mIMU, null, mMotors, 0, 0.25f,10000, false);
 	}
 
 
@@ -139,6 +137,8 @@ public class  AbsoluteGyroDrive1 extends OpMode {
 			mStep.setDirection((float) direction);
 			mStep.setPower((float) power);
 		}
+		else
+			mStep.setPower(0);
 		mStep.loop();
 	}
 
