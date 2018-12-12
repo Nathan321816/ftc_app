@@ -281,10 +281,10 @@ public class RoverRuckusGoToBlockTF extends OpMode  {
 
         // turn in place to face target within some error bound
         // this step actually executes the turn
-        SensorLib.PID pid1 = new SensorLib.PID(0.02f, 0.025f, 0, 10.0f);
+        SensorLib.PID pid1 = new SensorLib.PID(0.02f, 0.02f, 0, 10.0f);
         AutoLib.AzimuthTolerancedTurnStep turnStep = new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, pid1, mMotors, 0.3f, 5.0f, 3.0f);
         // this one drives along the same heading to the target
-        AutoLib.AzimuthTimedDriveStep driveStep = new AutoLib.AzimuthTimedDriveStep(this, 0, mGyro, pid1, mMotors, 0.3f, 2.0f, true);
+        AutoLib.AzimuthTimedDriveStep driveStep = new AutoLib.AzimuthTimedDriveStep(this, 0, mGyro, pid1, mMotors, 0.3f, 1.2f, true);
 
         // this step uses the Vuforia TensorFlow code to determine the angle to the target (yellow cube)
         // and tells the gyro-based turn step how far to turn.
