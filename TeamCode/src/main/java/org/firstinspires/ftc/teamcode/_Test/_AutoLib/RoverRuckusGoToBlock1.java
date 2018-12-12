@@ -302,7 +302,6 @@ public class RoverRuckusGoToBlock1 extends OpMode implements SetBitmap {
         if (invertLeft) {
             mMotors[2].setDirection(DcMotor.Direction.REVERSE);
             mMotors[3].setDirection(DcMotor.Direction.REVERSE);
-            //mMotors[1].setDirection(DcMotor.Direction.REVERSE);         // HACK!!! ratbot back-right motor is reversed ????
         }
         else {
             mMotors[0].setDirection(DcMotor.Direction.REVERSE);

@@ -55,12 +55,10 @@ public class GyroDriveTestOp extends OpMode {
         (mMotors[2] = mf.getDcMotor("fl")).setDirection(DcMotor.Direction.REVERSE);
         (mMotors[3] = mf.getDcMotor("bl")).setDirection(DcMotor.Direction.REVERSE);
 
-        //mMotors[1].setDirection(DcMotorSimple.Direction.REVERSE);   // HACK!!!  Ratbot REV hub right back motor is reversed!
-
 
         // get hardware IMU and wrap gyro in HeadingSensor object usable below
         mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
-        mGyro.init(3);  // 3: upright crosswise with REV face forward
+        mGyro.init(7);  // orientation of REV hub in my ratbot
 
 
         // create a PID controller for the sequence

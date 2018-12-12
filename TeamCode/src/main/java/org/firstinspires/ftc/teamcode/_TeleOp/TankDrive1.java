@@ -87,7 +87,6 @@ public class TankDrive1 extends OpMode {
 			motorBackLeft = hardwareMap.dcMotor.get("bl");
 			motorFrontLeft.setDirection(DcMotor.Direction.REVERSE);
 			motorBackLeft.setDirection(DcMotor.Direction.REVERSE);
-			motorBackRight.setDirection(DcMotor.Direction.REVERSE);			// HACK!!! ratbot back-right motor is reversed ????
 		}
 		catch (IllegalArgumentException iax) {
 			bDebug = true;
