@@ -9,6 +9,7 @@ import static android.os.SystemClock.sleep;
 public class BNO055IMUHeadingSensor implements HeadingSensor {
     BNO055IMU mIMU;
     float mHeadingOffset = 0;
+    int mOrientation = 0;
 
     public BNO055IMUHeadingSensor(BNO055IMU imu) {
         mIMU = imu;
@@ -31,7 +32,7 @@ public class BNO055IMUHeadingSensor implements HeadingSensor {
         return mIMU.getAngularOrientation().secondAngle;
     }
 
-    public Orientation getOrientation() {
+    public Orientation getAngularOrientation() {
         return mIMU.getAngularOrientation();
     }
 
@@ -51,9 +52,29 @@ public class BNO055IMUHeadingSensor implements HeadingSensor {
         mIMU.initialize(parameters);
 
         // this may take too long to do in init -- if so, move to start() or loop() first time
-        if (orientation >= 0)
-            setRevOrientation(mIMU, orientation);
+        setOrientation(orientation);
     }
+
+    // used for testing changing to various orientations after initialization
+    public boolean setOrientation(int orientation) {
+        if (orientation >= 0 && orientation < numOrientations()) {
+            mOrientation = orientation;
+            setRevOrientation(mIMU, mOrientation);
+            return true;        // legal
+        }
+        return false;       // not legal
+    }
+
+    // return current orientation index
+    public int getOrientation() {
+        return mOrientation;
+    }
+
+    // return number of implemented orientations (see setRevOrientation below)
+    public int numOrientations() {
+        return config.length;
+    }
+
 
     // this function sets CONFIG and SIGN bytes for REV mounted in various orientations.
     // the default orientation of the IMU axes in the REV hub is like this:
@@ -69,35 +90,38 @@ public class BNO055IMUHeadingSensor implements HeadingSensor {
     // we will use the convention PITCH = +X, ROLL = +Y, YAW(Heading) = +Z
     // which corresponds to mounting the REV hub laying flat on the vehicle as shown above.
 
-    private void setRevOrientation(BNO055IMU imu, int orientation) {
-        // other orientations need these settings:
-        byte[] config = { 0x24, 0x24, 0x6, 0x9, 0x21, 0x24, 0x6, 0x21 };
-        byte[] sign   = { 0x0,  0x6,  0x1, 0x3, 0x4,  0x6,  0x2, 0x1 };
-        // 0: flat with top of REV label on right side of vehicle (default):
-        // byte AXIS_MAP_CONFIG_BYTE = 0x24;    // Z=Z Y=Y X=X
-        // byte AXIS_MAP_SIGN_BYTE = 0x0;       // X Y Z
-        // 1: flat with R in REV closest to front of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x24;    // Z=Z Y=-Y X=-X
-        // byte AXIS_MAP_SIGN_BYTE = 0x6;       // -X -Y Z
-        // 2: upright longitudinally with R nearest the front of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x6;     // Z=-X Y=-Y X=-Z
-        // byte AXIS_MAP_SIGN_BYTE = 0x1;       // X Y -Z     ?? if 0x7 -X -Y -Z, X and Y are LH rotations
-        // 3: upright crosswise with REV facing forward:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x9;     // Z=-X Y=Z X=-Y
-        // byte AXIS_MAP_SIGN_BYTE = 0x3;       // X -Y -Z    ?? if 0x5 -X Y -Z, X and Y are LH rotations
-        // 4: flat with top of REV label along back side of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x21;    // Z=Z Y=-X X=Y
-        // byte AXIS_MAP_SIGN_BYTE = 0x4;       // -X Y Z
-        // 5: flat with top of REV label on left side of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x24;    // Z=Z Y=-Y X=-X
-        // byte AXIS_MAP_SIGN_BYTE = 0x6;       // -X -Y Z
-        // 6: upright longitudinally with V nearest the front of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x6;     // Z=-X Y=Y X=Z
-        // byte AXIS_MAP_SIGN_BYTE = 0x2;       // X -Y Z     ?? if 0x4 -X Y Z, X and Y are LH rotations
-        // 7: flat face DOWN with top of REV label nearest the back of vehicle:
-        // byte AXIS_MAP_CONFIG_BYTE = 0x21;    // Z=-Z Y=X X=Y
-        // byte AXIS_MAP_SIGN_BYTE = 0x1;       // X Y -Z
+    // other orientations need these settings:
+    private byte[] config = { 0x24, 0x24, 0x21, 0x21, 0x6,  0x6, 0x9, 0x9, 0x21 };
+    private byte[] sign   = { 0x0,  0x6,  0x4,  0x2,  0x1,  0x4, 0x5, 0x3, 0x7  };
+    // 0: flat with top of REV label on right side of vehicle (default):
+    // byte AXIS_MAP_CONFIG_BYTE = 0x24;    // Z=Z Y=Y X=X
+    // byte AXIS_MAP_SIGN_BYTE = 0x0;       // X Y Z
+    // 1: flat with top of REV label on left side of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x24;    // Z=Z Y=-Y X=-X
+    // byte AXIS_MAP_SIGN_BYTE = 0x6;       // -X -Y Z
+    // 2: flat with top of REV label along front side of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x21;    // Z=Z Y=-X X=Y
+    // byte AXIS_MAP_SIGN_BYTE = 0x4;       // -X Y Z
+    // 3: flat with top of REV label along back side of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x21;    // Z=Z Y=X X=-Y
+    // byte AXIS_MAP_SIGN_BYTE = 0x2;       // X -Y Z
+    // 4: upright longitudinally with R nearest the front of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x6;     // Z=-X Y=-Y X=-Z
+    // byte AXIS_MAP_SIGN_BYTE = 0x1;       // X Y -Z     ?? if 0x7 -X -Y -Z, X and Y are LH rotations
+    // 5: upright longitudinally with V nearest the front of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x6;     // Z=X Y=-Y X=Z
+    // byte AXIS_MAP_SIGN_BYTE = 0x4;       // -X Y Z, X is RH, but around +=180 ??
+    // 6: upright crosswise with REV facing backward:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x9;     // Z=-X Y=-Z X=Y
+    // byte AXIS_MAP_SIGN_BYTE = 0x5;       // -X Y -Z
+    // 7: upright crosswise with REV facing forward:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x9;     // Z=-X Y=Z X=-Y
+    // byte AXIS_MAP_SIGN_BYTE = 0x3;       // X -Y -Z    ?? if 0x5 -X Y -Z, X and Y are LH rotations
+    // 8: flat face DOWN with top of REV label nearest the back of vehicle:
+    // byte AXIS_MAP_CONFIG_BYTE = 0x21;    // Z=-Z Y=-X X=-Y
+    // byte AXIS_MAP_SIGN_BYTE = 0x7;       // -X -Y -Z
 
+    private void setRevOrientation(BNO055IMU imu, int orientation) {
 
         //Need to be in CONFIG mode to write to registers
         imu.write8(BNO055IMU.Register.OPR_MODE, BNO055IMU.SensorMode.CONFIG.bVal);
