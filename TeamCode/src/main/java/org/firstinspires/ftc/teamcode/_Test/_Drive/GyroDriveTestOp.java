@@ -72,6 +72,27 @@ public class GyroDriveTestOp extends OpMode {
         // create the root Sequence for this autonomous OpMode
         mSequence = new AutoLib.LinearSequence();
 
+        // add a bunch of timed "legs" to the sequence - use Gyro heading convention of positive degrees CW from initial heading
+        float tol = 5.0f;   // tolerance in degrees
+        float timeout = 2.0f;   // seconds
+        // test "scanning" left and right e.g. 30 degrees
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 30, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "left 30", 2));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, -30, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "right 30", 2));
+
+        // turn 4 quadrants in place
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "course 0", 1));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 90, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "course 90", 1));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 180, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "course 180", 1));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 270, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "course 270", 1));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.LogTimeStep(this, "course 0", 1));
+
         boolean bUseEncoders = false;
         if (bUseEncoders) {
             // add a bunch of encoder-counted "legs" to the sequence - use Gyro heading convention of positive degrees CCW from initial heading
@@ -79,29 +100,14 @@ public class GyroDriveTestOp extends OpMode {
             mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 0, mGyro, mPid, mMotors, movePower, leg, false));
             mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 90, mGyro, mPid, mMotors, movePower, leg, false));
             mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 180, mGyro, mPid, mMotors, movePower, leg, false));
-            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 270, mGyro, mPid, mMotors, movePower, leg, false));
-            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 0, mGyro, mPid, mMotors, movePower, leg, true));
-                    }
-        else  {
-            // add a bunch of timed "legs" to the sequence - use Gyro heading convention of positive degrees CW from initial heading
-            float tol = 5.0f;   // tolerance in degrees
-            float timeout = 2.0f;   // seconds
-            // test "scanning" left and right e.g. 30 degrees
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 30, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "left 30", 2));
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, -30, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "right 30", 2));
-
-            // turn 4 quadrants in place
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 90, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "course 90", 1));
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 180, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "course 180", 1));
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 270, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "course 270", 1));
+            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, -90, mGyro, mPid, mMotors, movePower, leg, false));
             mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.LogTimeStep(this, "course 0", 1));
-
+            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 90, mGyro, mPid, mMotors, movePower, leg, true));
+            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 0, mGyro, mPid, mMotors, movePower, leg, true));
+            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, -90, mGyro, mPid, mMotors, movePower, leg, true));
+            mSequence.add(new AutoLib.AzimuthCountedDriveStep(this, 180, mGyro, mPid, mMotors, movePower, leg, true));
+        }
+        else  {
             // drive a "box" CCW and then again CW - see if we end up where we started ...
             float leg = debug ? 6.0f : 1.5f;  // time along each leg of the polygon
             mSequence.add(new AutoLib.AzimuthTimedDriveStep(this, 0, mGyro, mPid, mMotors, movePower, leg, false));
@@ -113,9 +119,9 @@ public class GyroDriveTestOp extends OpMode {
             mSequence.add(new AutoLib.AzimuthTimedDriveStep(this, 0, mGyro, mPid, mMotors, movePower, leg, false));
             mSequence.add(new AutoLib.AzimuthTimedDriveStep(this, -90, mGyro, mPid, mMotors, movePower, leg, false));
             mSequence.add(new AutoLib.AzimuthTimedDriveStep(this, 180, mGyro, mPid, mMotors, movePower, leg, false));
-            mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
-            mSequence.add(new AutoLib.MoveByTimeStep(mMotors, 0, 0, true));     // stop all motors
         }
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.MoveByTimeStep(mMotors, 0, 0, true));     // stop all motors
 
         // start out not-done
         bDone = false;
