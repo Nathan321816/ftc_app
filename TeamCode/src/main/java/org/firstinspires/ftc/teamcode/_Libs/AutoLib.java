@@ -1872,7 +1872,7 @@ public class AutoLib {
             mName = name;
             mPower = 0.0;
             mMaxSpeed = 0;
-            mMode = DcMotor.RunMode.RUN_WITHOUT_ENCODERS;
+            mMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER;
             mTargetPosition = 0;
             mCurrentPosition = 0;
             mPowerFloat = false;
