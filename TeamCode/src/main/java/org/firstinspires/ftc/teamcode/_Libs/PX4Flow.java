@@ -29,7 +29,8 @@ package org.firstinspires.ftc.teamcode._Libs;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice;
-import com.qualcomm.robotcore.hardware.configuration.I2cSensor;
+import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties;
+import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -90,8 +91,7 @@ class px4_integral_frame
     }
 }
 
-//@I2cDeviceType() @DeviceProperties(name = "PX4Flow", description = "PX4Flow Camera", xmlTag = "PX4Flow")
-@I2cSensor(name = "PX4Flow", description = "PX4Flow", xmlTag = "PX4Flow")
+@I2cDeviceType() @DeviceProperties(name = "PX4Flow", description = "PX4Flow Camera", xmlTag = "PX4Flow")
 public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
 
     // 7 Bit I2C Address of the Flow Module: Default 0x42 (user selectable bits 0,1,2) 
