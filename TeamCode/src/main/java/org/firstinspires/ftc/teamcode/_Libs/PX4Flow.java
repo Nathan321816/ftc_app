@@ -26,6 +26,7 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
 import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties;
 import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType;
+import com.qualcomm.robotcore.hardware.configuration.I2cSensor;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -86,22 +87,15 @@ class px4_integral_frame
     }
 }
 
-@I2cDeviceType() @DeviceProperties(name = "PX4Flow", description = "PX4Flow Camera", xmlTag = "PX4Flow")
+//@I2cDeviceType() @DeviceProperties(name = "PX4Flow", description = "PX4Flow Camera", xmlTag = "PX4Flow")
+@I2cSensor(name = "PX4Flow", description = "PX4Flow", xmlTag = "PX4Flow")
 public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
 
     // 7 Bit I2C Address of the Flow Module: Default 0x42 (user selectable bits 0,1,2) 
     final byte PX4FLOW_ADDRESS = 0x42;
 
-    // timeout in milliseconds for PX4Flow read
-    final byte PX4FLOW_TIMEOUT = 10;
-
-    // If set to true, will print error messages on Serial
-    final boolean PX4FLOW_DEBUG = true;
-
     private px4_frame frame;
     private px4_integral_frame iframe;
-
-    private byte[] mCache; //The read will return an array of bytes. They are stored in this variable
 
     I2cAddr mAddress = new I2cAddr(PX4FLOW_ADDRESS); //Default I2C address for PX4Flow (7-bit)
 
@@ -109,14 +103,6 @@ public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
     final int mFrameLen = 22;       //Number of bytes to read
     final int mIntegralReg = 0x16;  //Register to start reading for integral data
     final int mIntegralLen = 26;    //Number of bytes to read (25 + pad)
-
-    public I2cDevice mDevice;
-    public I2cDeviceSynch mDeviceReader;
-
-    public void init() {
-        mDeviceReader = new I2cDeviceSynchImpl(mDevice, mAddress, false);
-        mDeviceReader.engage();
-    }
 
     private I2cDeviceSynch.ReadWindow mFrameReadWindow;
     private I2cDeviceSynch.ReadWindow mIntegralReadWindow;
@@ -126,7 +112,6 @@ public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
     {
         super(deviceSynch, true);
 
-        // are these used?
         this.mFrameReadWindow = new I2cDeviceSynch.ReadWindow(mFrameReg, mFrameLen, I2cDeviceSynch.ReadMode.ONLY_ONCE);
         this.mIntegralReadWindow = new I2cDeviceSynch.ReadWindow(mIntegralReg, mIntegralLen, I2cDeviceSynch.ReadMode.ONLY_ONCE);
 
@@ -135,17 +120,23 @@ public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
         this.deviceClient.engage();
     }
 
+    private byte [] ReadEntireWindow(I2cDeviceSynch.ReadWindow readWindow)
+    {
+        this.deviceClient.setReadWindow(readWindow);
+        return this.deviceClient.read(readWindow.getRegisterFirst(), readWindow.getRegisterCount());
+    }
+
     public boolean readFrame() {
         // read frame data from the PX4FLOW module
-        mCache = mDeviceReader.read(mFrameReg, mFrameLen);
-        frame = new px4_frame(mCache);
+        byte[] data = ReadEntireWindow(mFrameReadWindow);
+        frame = new px4_frame(data);
         return (frame != null);
     }
 
     public boolean readIntegral() {
         // read integral data from the PX4FLOW module
-        mCache = mDeviceReader.read(mIntegralReg, mIntegralLen);
-        iframe = new px4_integral_frame(mCache);
+        byte[] data = ReadEntireWindow(mIntegralReadWindow);
+        iframe = new px4_integral_frame(data);
         return (frame != null);
     }
 
@@ -228,7 +219,7 @@ public class PX4Flow extends I2cDeviceSynchDevice<I2cDeviceSynch> {
 
     @Override
     public String getDeviceName() {
-        return "PixyCam";
+        return "PX4Flow";
     }
 
 }

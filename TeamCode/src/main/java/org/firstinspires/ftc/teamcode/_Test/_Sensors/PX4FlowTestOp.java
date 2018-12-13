@@ -25,7 +25,6 @@ public class PX4FlowTestOp extends OpMode {
 
     public void init() {
         mSensor = hardwareMap.get(PX4Flow.class, "PX4Flow");
-        mSensor.init();
     }
 
     public void loop() {
