@@ -2,7 +2,7 @@
 /**
  * The PX4Flow class provides an interface to PX4Flow optical flow camera capabilities
  * via I2C on the Android-based FTC robotics control system, where communications occur via the
- * "Core Device Interface Module" produced by Modern Robotics, inc.
+ * "Rev Robotics Expansion Hub"
  */
 
 /*
@@ -13,19 +13,22 @@ For more information, visit modernroboticsedu.com.
 Support is available by emailing support@modernroboticsinc.com.
 */
 
+/*
+The Configuration file for this version should look like
+    Expansion Hub Portal 1
+        Expansion Hub 2 (if that's what you're using)
+            I2C  Bus 1
+                Port 1 PX4Flow "PX4Flow"        (NOT Port 0!)
+*/
+
 // As described in the documentation
 // http://pixhawk.org/modules/px4flow
 
 package org.firstinspires.ftc.teamcode._Libs;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice;
-import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
-import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties;
-import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType;
 import com.qualcomm.robotcore.hardware.configuration.I2cSensor;
 
 import java.nio.ByteBuffer;
