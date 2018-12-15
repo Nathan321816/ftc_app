@@ -43,9 +43,9 @@ public class PX4FlowTestOp extends OpMode {
         telemetry.addData("dy", dy);
         telemetry.addData("x", x);
         telemetry.addData("y", y);
-        //telemetry.addData("gyro dx", mSensor.gyro_x_rate_integral());
-        //telemetry.addData("gyro dy", mSensor.gyro_y_rate_integral());
-        //telemetry.addData("gyro dz", mSensor.gyro_z_rate_integral());
+        telemetry.addData("gyro dx", mSensor.gyro_x_rate_integral());
+        telemetry.addData("gyro dy", mSensor.gyro_y_rate_integral());
+        telemetry.addData("gyro dz", mSensor.gyro_z_rate_integral());
         telemetry.addData("quality", mSensor.quality_integral());
         telemetry.addData("time", mSensor.integration_timespan());
     }
