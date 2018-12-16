@@ -4,6 +4,9 @@ import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.UltrasonicSensor;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+
 /**
  * library of utility classes supporting sensor inputs
  * Created by phanau on 1/1/16.
@@ -229,32 +232,39 @@ public class SensorLib {
     // class that integrates movement and direction data to estimate a position on the field
     public static class PositionIntegrator {
 
-        double mPosX, mPosY;
+        Position mPosition;
 
         public PositionIntegrator() {
-            mPosX = mPosY = 0;
+            mPosition = new Position(DistanceUnit.INCH, 0,0,0,0);
         }
 
         public PositionIntegrator(double x, double y) {     // initial position
-            mPosX = x;
-            mPosY = y;
+            mPosition = new Position(DistanceUnit.INCH, x, y, 0, 0);
+        }
+
+        public PositionIntegrator(Position position) {
+            mPosition = position;
         }
 
         // move the position the given distance along the given bearing -
-        // bearing is absolute in degrees with zero being along the X-axis, positive CCW
+        // bearing is absolute in degrees with zero being along the field Y-axis, positive CCW
         public void move(double distance, double bearing) {
             double a = Math.toRadians(bearing);
-            mPosX += distance * Math.cos(a);
-            mPosY += distance * Math.sin(a);
+            mPosition.x -= distance * Math.sin(a);
+            mPosition.y += distance * Math.cos(a);
+        }
+
+        // move the position the given distances in vehicle X (right) and Y (forward) on the given bearing -
+        // bearing is absolute in degrees with zero being along the field Y-axis, positive CCW
+        public void move(double dx, double dy, double bearing) {
+            double a = Math.toRadians(bearing);
+            mPosition.x += dx * Math.cos(a) - dy * Math.sin(a);
+            mPosition.y += dx * Math.sin(a) + dy * Math.cos(a);
         }
 
         // get the current position
-        public double getX() { return mPosX; }
-        public double getY() { return mPosY; }
-        public double[] get() {
-            double p[] = new double[2];
-            p[0] = mPosX;  p[1] = mPosY;
-            return p;
-        }
+        public double getX() { return mPosition.x; }
+        public double getY() { return mPosition.y; }
+        public Position getPosition() { return mPosition; }
     }
 }
