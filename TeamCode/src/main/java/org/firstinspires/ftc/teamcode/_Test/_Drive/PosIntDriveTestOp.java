@@ -100,29 +100,21 @@ class PosIntDriveToStep extends AutoLib.Step {
 
     OpMode mOpMode;
     EncoderGyroPosInt mPosInt;
-    DcMotor[] mMotors;
-    float mPower;
     Position mTarget;
-    double mTolerance;
-    boolean mStop;
     AutoLib.GuidedTerminatedDriveStep mSubStep;
     AutoLib.GyroGuideStep mGuideStep;
     PositionTerminatorStep mTerminatorStep;
 
     public PosIntDriveToStep(OpMode opmode, EncoderGyroPosInt posInt, DcMotor[] motors,
-                             float power, Position target, double tol, boolean stop)
+                             float power, Position target, double tolerance, boolean stop)
     {
         mOpMode = opmode;
         mPosInt = posInt;
-        mMotors = motors;
-        mPower = power;
         mTarget = target;
-        mTolerance = tol;
-        mStop = stop;
 
         // create the sub-steps that will actually do the move
         mGuideStep = new AutoLib.GyroGuideStep(mOpMode, 0, mPosInt.getGyro(), null, null, power);
-        mTerminatorStep = new PositionTerminatorStep(mOpMode, mPosInt, mTarget, mTolerance);
+        mTerminatorStep = new PositionTerminatorStep(mOpMode, mPosInt, mTarget, tolerance);
         mSubStep = new AutoLib.GuidedTerminatedDriveStep(mOpMode, mGuideStep, mTerminatorStep, motors);
     }
 
@@ -135,13 +127,16 @@ class PosIntDriveToStep extends AutoLib.Step {
         // update the GyroGuideStep heading to continue heading for the target
         mGuideStep.setHeading((float)HeadingToTarget(mTarget, mPosInt.getPosition()));
 
-        // run the sub step and return its result
+        // run the GuidedTerminatedDriveStep and return its result
         return mSubStep.loop();
     }
 
     private double HeadingToTarget(Position target, Position current) {
         double headingXrad = Math.atan2((target.y-current.y), (target.x-current.x));  // pos CCW from X-axis
         double headingYdeg = SensorLib.Utils.wrapAngle(Math.toDegrees(headingXrad) - 90.0);
+        mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget target", String.format("%.2f", target.x)+", " + String.format("%.2f", target.y));
+        mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget current", String.format("%.2f", current.x)+", " + String.format("%.2f", current.y));
+        mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget heading", String.format("%.2f", headingYdeg));
         return headingYdeg;
     }
 }
@@ -193,7 +188,7 @@ public class PosIntDriveTestOp extends OpMode {
         mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);    // make the object that implements PID control algorithm
 
         // create Encoder/gyro-based PositionIntegrator to keep track of where we are on the field
-        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[2]);
+        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1]);
 
 
         // create an autonomous sequence with the steps to drive
@@ -211,7 +206,7 @@ public class PosIntDriveTestOp extends OpMode {
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
         for (int i=0; i<3; i++) {
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
-                    new Position(DistanceUnit.INCH, 0, 12, 0., 0), tol, false));
+                    new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
