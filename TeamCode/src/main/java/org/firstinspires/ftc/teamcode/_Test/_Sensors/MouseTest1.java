@@ -19,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
@@ -223,7 +224,7 @@ class MyMouseInputDevice {
 
 
 @Autonomous(name="Test: Mouse Test 1", group ="Test")
-//@Disabled
+@Disabled
 public class MouseTest1 extends OpMode {
 
     MyUsbMouse mMyUsbMouse;
