@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode._Libs.CameraLib;
 import org.firstinspires.ftc.teamcode._Libs.VuforiaLib_FTC2017;
+import org.firstinspires.ftc.teamcode._Libs.VuforiaLib_RoverRuckus;
 
 
 @Autonomous(name="Test: CameraLib Test Vuforia", group ="Test")
@@ -20,7 +21,7 @@ import org.firstinspires.ftc.teamcode._Libs.VuforiaLib_FTC2017;
 public class CameraTestOpVuforia extends OpMode {
 
     int mLoopCount;
-    VuforiaLib_FTC2017 mVLib;
+    VuforiaLib_RoverRuckus mVLib;
 
 
     // Constructor
@@ -29,7 +30,7 @@ public class CameraTestOpVuforia extends OpMode {
 
     @Override
     public void init() {
-        mVLib = new VuforiaLib_FTC2017();
+        mVLib = new VuforiaLib_RoverRuckus();
         mVLib.init(this, null);     // pass it this OpMode (so it can do telemetry output) and use its license key for now
     }
 
