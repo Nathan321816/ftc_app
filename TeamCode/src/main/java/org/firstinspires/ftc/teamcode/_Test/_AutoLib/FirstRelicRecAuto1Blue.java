@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.firstinspires.ftc.teamcode._Test._AutoLib;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 /**
  * This OpMode uses a Step that uses the VuforiaLib_FTC2017 library to determine
@@ -42,7 +43,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
  */
 
 @Autonomous(name="FirstRelicRecAuto1Blue", group ="Auto")
-//@Disabled
+@Disabled
 public class FirstRelicRecAuto1Blue extends FirstRelicRecAuto1 {
 
     public void init() {

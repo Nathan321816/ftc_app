@@ -36,6 +36,7 @@ import android.graphics.Bitmap;
 import android.graphics.RectF;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.vuforia.Image;
 
@@ -49,12 +50,15 @@ import org.firstinspires.ftc.teamcode._Libs.VuforiaLib_FTC2017;
 import java.nio.ByteBuffer;
 
 /**
- * This OpMode illustrates the basics of using the VuforiaLib_FTC2016 library to determine
- * positioning and orientation of robot on the FTC field.
+ * This OpMode is an attempt to use the Vuforia library to determine
+ * positioning and orientation of the red and blue cryptoboxes from the 2017-8 game on the FTC field.
+ * It uses a generalized form of our Vuforia wrapper class (VuforiaLib_3D) that lets the client
+ * specify the names of the various images to be recognized, and assumes the client is supplying
+ * their own database (.dat and .xml files) with the given name (here "CryptoRedBlue1").
  */
 
 @Autonomous(name="Test: Vuforia 3D Test 1", group ="Test")
-//@Disabled
+@Disabled
 public class Vuforia3DTest1 extends OpMode {
 
     VuforiaLib_3D mVLib;

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode._Test._AutoLib;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode._Libs.AutoLib;
@@ -10,7 +11,7 @@ import org.firstinspires.ftc.teamcode._Libs.AutoLib;
 // each derived OpMode just creates its own sequence and maybe also gets additional hardware that only it needs.
 
 @Autonomous(name="Test: RedBallGyro from AutoOpModeBase", group ="Test")
-//@Disabled
+@Disabled
 public class RedBallGyroAutoOpMode extends AutoOpModeBase {
 
     boolean bSetup = false;             // true when we're in "setup mode" where joysticks tweak parameters
