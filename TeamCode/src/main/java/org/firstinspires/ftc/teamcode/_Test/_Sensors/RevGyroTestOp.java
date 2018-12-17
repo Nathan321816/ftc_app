@@ -21,7 +21,7 @@ import static android.os.SystemClock.sleep;
 //@Disabled
 public class RevGyroTestOp extends OpMode {
 
-    private BNO055IMUHeadingSensor mIMU;
+    private BNO055IMUHeadingSensor mGyro;
     ToggleButton mButton;
 
     public RevGyroTestOp() {
@@ -29,22 +29,34 @@ public class RevGyroTestOp extends OpMode {
 
     public void init() {
         // get hardware IMU and wrap gyro in HeadingSensor object usable below
-        mIMU = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
-        mIMU.init(3);  // 3: upright crosswise with REV face forward
+        mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
+        mGyro.init(7);  // 7: upright crosswise with REV face forward
+        mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
+        mGyro.setOpMode(this);      // enable debug output
 
         // create a toggle-button that cycles through the N possible orientations of the IMU
-        mButton = new ToggleButton(false, mIMU.numOrientations(), 0);
+        mButton = new ToggleButton(false, mGyro.numOrientations(), 0);
     }
 
     public void loop() {
 
-        // use controller input X to cycle through various orientations
+        // use controller input button X to cycle through various orientations
         if (mButton.process(gamepad1.x))
-            mIMU.setOrientation(mButton.value());
-        telemetry.addData("usage", "press X to cycle through orientations");
-        telemetry.addData("index", mIMU.getOrientation());
-        telemetry.addData("orientation", mIMU.getAngularOrientation());
-        telemetry.addData("position", mIMU.getPosition());
+            mGyro.setOrientation(mButton.value());
+
+        // use controller buttons A and B to increase/decrease degrees per turn correction
+        if (gamepad1.a)
+            mGyro.setDegreesPerTurn(mGyro.getDegreesPerTurn()+0.1f);
+        if (gamepad1.b)
+            mGyro.setDegreesPerTurn(mGyro.getDegreesPerTurn()-0.1f);
+
+        telemetry.addData("usage", "press X to set orientation, AB to adjust degrees per turn");
+        telemetry.addData("orientation index", mGyro.getOrientation());
+        telemetry.addData("degrees per turn", mGyro.getDegreesPerTurn());
+
+        telemetry.addData("corrected heading", mGyro.getHeading());
+        telemetry.addData("raw orientation", mGyro.getAngularOrientation());
+        telemetry.addData("raw position", mGyro.getPosition());
     }
 
 }

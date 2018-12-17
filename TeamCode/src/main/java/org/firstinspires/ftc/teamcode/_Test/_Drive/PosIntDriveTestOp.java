@@ -183,6 +183,7 @@ public class PosIntDriveTestOp extends OpMode {
         // get hardware IMU and wrap gyro in HeadingSensor object usable below
         mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
         mGyro.init(7);  // orientation of REV hub in my ratbot
+        mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
         // create a PID controller for the sequence
         mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);    // make the object that implements PID control algorithm
@@ -209,6 +210,16 @@ public class PosIntDriveTestOp extends OpMode {
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+                    new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+                    new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
+        }
+        for (int i=0; i<3; i++) {
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+                    new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+                    new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
             mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,

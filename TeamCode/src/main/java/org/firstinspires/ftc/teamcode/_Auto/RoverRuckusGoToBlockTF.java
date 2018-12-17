@@ -270,7 +270,7 @@ public class RoverRuckusGoToBlockTF extends OpMode  {
         // get hardware IMU and wrap gyro in HeadingSensor object usable below
         mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
         mGyro.init(3);  // 3: upright crosswise with REV face forward
-
+        mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
         // best to do this now, which is called from opmode's init() function
         mVLib = new VuforiaLib_RoverRuckus();

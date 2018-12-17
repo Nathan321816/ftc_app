@@ -1,28 +1,64 @@
 package org.firstinspires.ftc.teamcode._Libs;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import static android.os.SystemClock.sleep;
 
 // wrapper for BNO055IMU gyro that implements our HeadingSensor interface
+// also does correction for IMUs that return other than 360 degrees per full turn
+
 public class BNO055IMUHeadingSensor implements HeadingSensor {
-    BNO055IMU mIMU;
-    float mHeadingOffset = 0;
-    int mOrientation = 0;
+
+    BNO055IMU mIMU;             // the physical IMU
+    float mHeadingOffset = 0;   // client specified "initial heading" == IMU heading zero
+    int mOrientation = 0;       // orientation of REV hub on vehicle -- see choices below
+
+    float mDegreesPerTurn = 360.0f;     // measured empirically - set this if yours isn't 360
+
+    float mPrevHeading;         // for accumulating multi-turn heading incrementally
+    float mCumHeading;          // accumulated multi-turn heading for error correction
+
+    OpMode mOpMode = null;      // for debugging
 
     public BNO055IMUHeadingSensor(BNO055IMU imu) {
         mIMU = imu;
     }
 
     public float getHeading() {
-        // return sensor heading value plus initial offset (heading at sensor zero) wrapped to -180..+180
-        return SensorLib.Utils.wrapAngle(mIMU.getAngularOrientation().firstAngle + mHeadingOffset);
+        // compute incremental heading change since last reading and add it to the cumulative
+        // multi-turn heading used to compute error correction
+        float imuZ = mIMU.getAngularOrientation().firstAngle;
+        float delta = SensorLib.Utils.wrapAngle(imuZ - mPrevHeading);
+        mCumHeading += delta;
+        mPrevHeading = imuZ;
+
+        // compute corrected cumulative heading
+        float corrCumHeading = mCumHeading * 360.0f / mDegreesPerTurn;
+
+        // compute sensor heading value corrected for IMU error (measured)
+        // plus initial offset (heading at sensor zero) wrapped to -180..+180
+        float result = SensorLib.Utils.wrapAngle(corrCumHeading + mHeadingOffset);
+
+        // debug output
+        if (mOpMode != null) {
+            mOpMode.telemetry.addData("mCumHeading", mCumHeading);
+            mOpMode.telemetry.addData("corrCumHeading", corrCumHeading);
+            mOpMode.telemetry.addData("result", result);
+        }
+
+        return result;
     }
 
     public boolean haveHeading() { return true; }
 
+    public void setDegreesPerTurn(float degreesPerTurn) { mDegreesPerTurn = degreesPerTurn; }
+    public float getDegreesPerTurn() { return mDegreesPerTurn; }
+
     public void setHeadingOffset(float offset) { mHeadingOffset = offset; }
+    public float getHeadingOffset() { return mHeadingOffset; }
 
     public float getPitch() {
         return mIMU.getAngularOrientation().thirdAngle;
@@ -53,6 +89,13 @@ public class BNO055IMUHeadingSensor implements HeadingSensor {
 
         // this may take too long to do in init -- if so, move to start() or loop() first time
         setOrientation(orientation);
+
+        // initialize "previous" heading used for error correction
+        mPrevHeading = mIMU.getAngularOrientation().firstAngle;
+    }
+
+    public void setOpMode(OpMode opmode) {
+        mOpMode = opmode;
     }
 
     // used for testing changing to various orientations after initialization

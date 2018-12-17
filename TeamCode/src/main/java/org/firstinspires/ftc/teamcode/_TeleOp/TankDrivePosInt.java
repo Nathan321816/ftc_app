@@ -111,9 +111,10 @@ public class TankDrivePosInt extends OpMode {
 		// get hardware IMU and wrap gyro in HeadingSensor object usable below
 		mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
 		mGyro.init(7);  // orientation of REV hub in my ratbot
+		mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
 		bFirstLoop = true;
-		mEncoderMotor = motorFrontLeft;
+		mEncoderMotor = motorBackRight;
 	}
 
 	/*
@@ -141,8 +142,9 @@ public class TankDrivePosInt extends OpMode {
 
 		// scale the joystick value to make it easier to control
 		// the robot more precisely at slower speeds.
-		left =  (float)scaleInput(left);
-		right = (float)scaleInput(right);
+		final float scale = 0.3f;
+		left =  (float)scaleInput(left) * scale;
+		right = (float)scaleInput(right) * scale;
 
 		// write the values to the motors - for now, front and back motors on each side are set the same
 		if (!bDebug) {
