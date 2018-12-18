@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode._Libs.AutoLib;
 //@Disabled
 public class TestMotorEncoders extends OpMode {
 
-    DcMotor mMotor;
+    DcMotor mMotor1, mMotor2;
     AutoLib.Sequence mSequence;     // the root of the sequence tree
     boolean bDone;                  // true when the programmed sequence is done
 
@@ -33,18 +33,24 @@ public class TestMotorEncoders extends OpMode {
 
         // get the motors: depending on the factory we created above, these may be
         // either dummy motors that just log data or real ones that drive the hardware
-        mMotor = mf.getDcMotor("motor1");
+        (mMotor1 = mf.getDcMotor("fl")).setDirection(DcMotor.Direction.REVERSE);
+        mMotor2 = mf.getDcMotor("br");
 
         // create the root Sequence for this autonomous OpMode
         mSequence = new AutoLib.LinearSequence();
 
-        // add a Step sequence that rotates a motor one rev forward and then one rev backward
-        double power = 0.8;
-        int count = 28*60;    // shaft encoder at 28 ppr * 60:1 gearbox
+        // add a Step sequence that rotates a motor N revs forward and then backward to starting position
+        double power = 0.4;
+        int countPerTurn = 28*20;    // shaft encoder at 28 ppr * 20:1 gearbox
         boolean stop = true;
-        mSequence.add(new AutoLib.EncoderMotorStep(mMotor, power, count, stop));
+        int turns = 3;
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, power, turns*countPerTurn, stop));      // forward
         mSequence.add(new AutoLib.LogTimeStep(this, "wait", 1.0));
-        mSequence.add(new AutoLib.EncoderMotorStep(mMotor, power, -count, stop));
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, power, -turns*countPerTurn, stop));     // return to initial position
+        mSequence.add(new AutoLib.LogTimeStep(this, "wait", 1.0));
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, power, turns*countPerTurn, stop));      // forward
+        mSequence.add(new AutoLib.LogTimeStep(this, "wait", 1.0));
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, power, -turns*countPerTurn, stop));     // return to initial position
 
     }
 

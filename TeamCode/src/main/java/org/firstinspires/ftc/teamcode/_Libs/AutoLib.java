@@ -352,11 +352,11 @@ public class AutoLib {
 
     }
 
-    // a Step that runs a DcMotor at a given power, for a given encoder count
+    // a Step that runs a DcMotor at a given power, for a given encoder count relative to start of this Step
     static public class EncoderMotorStep extends Step implements SetPower {
         DcMotor mMotor;    // motor to control
         double mPower;          // power level to use
-        int mEncoderCount;      // target encoder count
+        int mEncoderCount;      // incremental target encoder count
         boolean mStop;          // stop motor when count is reached
 
         public EncoderMotorStep(DcMotor motor, double power, int count, boolean stop) {
@@ -380,7 +380,7 @@ public class AutoLib {
             if (firstLoopCall()) {
                 // set up the motor on our first call
                 mMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                mMotor.setTargetPosition(mMotor.getCurrentPosition() + mEncoderCount);
+                mMotor.setTargetPosition(mMotor.getCurrentPosition() + mEncoderCount);  // count is RELATIVE to NOW
                 mMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 mMotor.setPower(mPower);
             }
