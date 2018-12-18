@@ -40,6 +40,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
+import org.firstinspires.ftc.teamcode._Libs.PX4Flow;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
 
 /**
@@ -49,9 +50,9 @@ import org.firstinspires.ftc.teamcode._Libs.SensorLib;
  * Uses position integration to estimate where we are on the field
  */
 
-@TeleOp(name="TankDrive PosInt Encoder", group="Test")  // @Autonomous(...) is the other common choice
+@TeleOp(name="TankDrive PosInt PX4Flow", group="Test")  // @Autonomous(...) is the other common choice
 //@Disabled
-public class TankDrivePosInt extends OpMode {
+public class TankDrivePosIntPX4Flow extends OpMode {
 
 	DcMotor motorFrontRight;
 	DcMotor motorFrontLeft;
@@ -60,17 +61,15 @@ public class TankDrivePosInt extends OpMode {
 
 	SensorLib.PositionIntegrator mPosInt;	// position integrator
 	BNO055IMUHeadingSensor mGyro;           // gyro to use for heading information
-	int mEncoderPrev;						// previous reading of motor encoder
+
+	PX4Flow mFlow;
 
 	boolean bDebug = false;
-	boolean bFirstLoop = true;
-
-	DcMotor mEncoderMotor;					// the motor we'll use for encoder input
 
 	/**
 	 * Constructor
 	 */
-	public TankDrivePosInt() {
+	public TankDrivePosIntPX4Flow() {
 
 	}
 
@@ -113,8 +112,9 @@ public class TankDrivePosInt extends OpMode {
 		mGyro.init(7);  // orientation of REV hub in my ratbot
 		mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
-		bFirstLoop = true;
-		mEncoderMotor = motorBackRight;
+		// get PX4Flow pixel-flow camera
+		mFlow = hardwareMap.get(PX4Flow.class, "PX4Flow");
+
 	}
 
 	/*
@@ -124,12 +124,6 @@ public class TankDrivePosInt extends OpMode {
 	 */
 	@Override
 	public void loop() {
-
-		// get initial encoder value
-		if (bFirstLoop) {
-			mEncoderPrev = mEncoderMotor.getCurrentPosition();
-			bFirstLoop = false;
-		}
 
 		// tank drive
 		// note that if y equal -1 then joystick is pushed all of the way forward.
@@ -142,7 +136,7 @@ public class TankDrivePosInt extends OpMode {
 
 		// scale the joystick value to make it easier to control
 		// the robot more precisely at slower speeds.
-		final float scale = 0.3f;
+		final float scale = 0.2f;
 		left =  (float)scaleInput(left) * scale;
 		right = (float)scaleInput(right) * scale;
 
@@ -154,29 +148,32 @@ public class TankDrivePosInt extends OpMode {
 			motorBackLeft.setPower(left);
 		}
 
-		// get current encoder value and compute delta since last read
-		int encoder = mEncoderMotor.getCurrentPosition();
-		int encoderDist = encoder - mEncoderPrev;
-		mEncoderPrev = encoder;
+		// read current integrated data from sensor
+		mFlow.readIntegral();
+		int dx = mFlow.pixel_flow_x_integral();
+		int dy = mFlow.pixel_flow_y_integral();
 
-		// get bearing from IMU gyro
+		// get bearing from IMU gyro to compare to camera heading (appears more reliable)
 		double imuBearingDeg = mGyro.getHeading();
 
-		// update accumulated field position
-		final int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
-		final double wheelDiam = 4.0;		// wheel diameter (in)
-		double dist = (encoderDist * wheelDiam * Math.PI)/countsPerRev;
-		mPosInt.move(dist, imuBearingDeg);
+		// update accumulated field position - note args to move(right,forward) --
+		// on ratbot, camera is mounted such that forward is +x and right is +y
+		mPosInt.move(dy, dx, imuBearingDeg);
+
+		// current ratbot PX4Flow setup:
+		// camera board N" from ground with 4mm f/1.2 lens
+		// yields 10000 X-counts per 29"
+		double scaleX = 29.0/10000.0;
 
 		/*
 		 * Send telemetry data back to driver station.
 		 */
-		telemetry.addData("Test", "*** Position Integration ***");
-		telemetry.addData("left pwr", String.format("%.2f", left));
-		telemetry.addData("right pwr", String.format("%.2f", right));
+		telemetry.addData("Test", "*** Position Integration IMU+PX4Flow ***");
 		telemetry.addData("gamepad1", gamepad1);
-		telemetry.addData("gamepad2", gamepad2);
-		telemetry.addData("position", String.format("%.2f", mPosInt.getX())+", " + String.format("%.2f", mPosInt.getY()));
+		telemetry.addData("IMUgyro bearing(deg)", String.format("%.2f", imuBearingDeg));
+		telemetry.addData("position(in)", String.format("%.2f", mPosInt.getX()*scaleX)+", " + String.format("%.2f", mPosInt.getY()*scaleX));
+		telemetry.addData("quality", mFlow.quality_integral());
+		telemetry.addData("time", mFlow.integration_timespan());
 	}
 
 	/*

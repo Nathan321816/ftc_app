@@ -34,6 +34,7 @@ public class PX4FlowGyroTestOp extends OpMode {
         // get hardware IMU and wrap gyro in HeadingSensor object usable below
         mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
         mGyro.init(7);  // orientation of REV hub in my ratbot
+        mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
     }
 
