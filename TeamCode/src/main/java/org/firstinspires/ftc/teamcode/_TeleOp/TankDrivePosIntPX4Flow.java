@@ -42,6 +42,7 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.PX4Flow;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
+import org.firstinspires.ftc.teamcode._Libs.ToggleButton;
 
 /**
  * TeleOp Mode
@@ -65,6 +66,11 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 	PX4Flow mFlow;
 
 	boolean bDebug = false;
+
+	// to make joysticks work as expected when running backwards (i.e. with the PX4Flow on the front
+	// and the phone on the back, use "ratbotrevbkwards" config and toggle the reverseButton to
+	// make the initial direction of the robot +Y(field)
+	ToggleButton mReverseButton;				// toggles which end of the robot is considered "front"
 
 	/**
 	 * Constructor
@@ -115,6 +121,8 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 		// get PX4Flow pixel-flow camera
 		mFlow = hardwareMap.get(PX4Flow.class, "PX4Flow");
 
+		// make ToggleButton for reversing camera orientation
+		mReverseButton = new ToggleButton(false,2,0);
 	}
 
 	/*
@@ -124,6 +132,9 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 	 */
 	@Override
 	public void loop() {
+
+		// process the reverse-direction Y-button toggle
+		mReverseButton.process(gamepad1.y);
 
 		// tank drive
 		// note that if y equal -1 then joystick is pushed all of the way forward.
@@ -152,6 +163,11 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 		mFlow.readIntegral();
 		int dx = mFlow.pixel_flow_x_integral();
 		int dy = mFlow.pixel_flow_y_integral();
+		if (mReverseButton.value()==1) {
+			// we're running the robot backwards, so camera is on the front and dx,dy are negated
+			dx = -dx;
+			dy = -dy;
+		}
 
 		// get bearing from IMU gyro to compare to camera heading (appears more reliable)
 		double imuBearingDeg = mGyro.getHeading();
@@ -170,6 +186,7 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 		 */
 		telemetry.addData("Test", "*** Position Integration IMU+PX4Flow ***");
 		telemetry.addData("gamepad1", gamepad1);
+		telemetry.addData("reversed", mReverseButton.value()==1);
 		telemetry.addData("IMUgyro bearing(deg)", String.format("%.2f", imuBearingDeg));
 		telemetry.addData("position(in)", String.format("%.2f", mPosInt.getX()*scaleX)+", " + String.format("%.2f", mPosInt.getY()*scaleX));
 		telemetry.addData("quality", mFlow.quality_integral());
