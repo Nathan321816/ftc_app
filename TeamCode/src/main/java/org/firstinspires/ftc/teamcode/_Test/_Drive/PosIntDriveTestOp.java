@@ -152,10 +152,10 @@ class PosIntDriveToStep extends AutoLib.GuidedTerminatedDriveStep {
     PositionTerminatorStep mTerminatorStep;
 
     public PosIntDriveToStep(OpMode opmode, EncoderGyroPosInt posInt, DcMotor[] motors,
-                             float power, Position target, double tolerance, boolean stop)
+                             float power, SensorLib.PID pid, Position target, double tolerance, boolean stop)
     {
         super(opmode,
-                new GyroPosIntGuideStep(opmode, posInt, target, null, null, power),
+                new GyroPosIntGuideStep(opmode, posInt, target, pid, null, power),
                 new PositionTerminatorStep(opmode, posInt, target, tolerance),
                 motors);
 
@@ -234,23 +234,23 @@ public class PosIntDriveTestOp extends OpMode {
 
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
 
