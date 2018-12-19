@@ -179,12 +179,7 @@ public class PosIntDriveTestOp extends OpMode {
     boolean bSetup;                         // true when we're in "setup mode" where joysticks tweak parameters
     SensorLib.PID mPid;                     // PID controller for the sequence
     EncoderGyroPosInt mPosInt;              // Encoder/gyro-based position integrator to keep track of where we are
-
-    // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
-    float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
-    float Ki = 0.025f;         // ... integrator term
-    float Kd = 0;             // ... derivative term
-    float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
+    SensorLib.PIDAdjuster mPidAdjuster;     // for interactive adjustment of PID parameters
 
     @Override
     public void init() {
@@ -211,7 +206,15 @@ public class PosIntDriveTestOp extends OpMode {
         mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
         // create a PID controller for the sequence
+        // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
+        float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
+        float Ki = 0.025f;         // ... integrator term
+        float Kd = 0;             // ... derivative term
+        float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
         mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);    // make the object that implements PID control algorithm
+
+        // create a PID adjuster for interactive tweaking (see loop() below)
+        mPidAdjuster = new SensorLib.PIDAdjuster(this, mPid, gamepad1);
 
         // create Encoder/gyro-based PositionIntegrator to keep track of where we are on the field
         int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
@@ -270,14 +273,7 @@ public class PosIntDriveTestOp extends OpMode {
         if (gamepad1.x)
             bSetup = false;     // X button: exit "setup mode"
         if (bSetup) {           // "setup mode"
-            // adjust PID parameters by joystick inputs
-            Kp -= (gamepad1.left_stick_y * 0.0001f);
-            Ki -= (gamepad1.right_stick_y * 0.0001f);
-            // update the parameters of the PID used by all Steps in this test
-            mPid.setK(Kp, Ki, Kd, KiCutoff);
-            // log updated values to the operator's console
-            telemetry.addData("Kp = ", Kp);
-            telemetry.addData("Ki = ", Ki);
+            mPidAdjuster.loop();
             return;
         }
 

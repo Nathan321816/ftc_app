@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode._Libs;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.UltrasonicSensor;
 
@@ -41,10 +43,10 @@ public class SensorLib {
 
         private float mPrevError = 0;
         private float mIntegral = 0;
-        private float mKp = 0;
-        private float mKi = 0;
-        private float mKd = 0;
-        private float mKiCutoff = 0;     // max error value for which we integrate error over time
+        float mKp = 0;
+        float mKi = 0;
+        float mKd = 0;
+        float mKiCutoff = 0;     // max error value for which we integrate error over time
 
         public PID(float Kp, float Ki, float Kd, float KiCutoff) {
             setK(Kp, Ki, Kd, KiCutoff);
@@ -62,11 +64,9 @@ public class SensorLib {
             mKiCutoff = KiCutoff;
         }
 
-
-
         // run one cycle of the PID filter given current error and delta-time since the previous call
         public float loop(float error, float dt) {
-            if (Math.abs(error) < mKiCutoff)      // only integrate small errors (< 3 degrees for now)
+            if (Math.abs(error) < mKiCutoff)      // only integrate small errors to avoid wild over-correction
                 mIntegral += error*dt;
             float derivative = (dt > 0) ? (error - mPrevError)/dt : 0;
             float output = mKp*error + mKi*mIntegral + mKd*derivative;
@@ -74,6 +74,36 @@ public class SensorLib {
             return output;
         }
 
+    }
+
+    // handle interactive adjustment of PID parameters using controller
+    public static class PIDAdjuster {
+        OpMode mOpMode;
+        PID mPID;
+        Gamepad mGamepad;
+
+        public PIDAdjuster(OpMode opmode, PID pid, Gamepad gamepad) {
+            mOpMode = opmode;
+            mPID = pid;
+            mGamepad = gamepad;
+        }
+
+        public boolean loop() {
+            // adjust PID parameters by joystick inputs - use thresholds to reduce cross-axis changes
+            mPID.mKp -= (Math.abs(mGamepad.left_stick_y) < 0.1f ? 0 : mGamepad.left_stick_y * 0.0001f);
+            mPID.mKi -= (Math.abs(mGamepad.right_stick_y) < 0.1f ? 0 : mGamepad.right_stick_y * 0.0001f);
+            mPID.mKd += (Math.abs(mGamepad.left_stick_x) < 0.1f ? 0 : mGamepad.left_stick_x* 0.0001f);
+            mPID.mKiCutoff += (Math.abs(mGamepad.right_stick_x) < 0.1f ? 0 : mGamepad.right_stick_x * 0.01f);
+
+            // log updated values to the operator's console
+            if (mOpMode != null) {
+                mOpMode.telemetry.addData("Kp = ", mPID.mKp);
+                mOpMode.telemetry.addData("Ki = ", mPID.mKi);
+                mOpMode.telemetry.addData("Kd = ", mPID.mKd);
+                mOpMode.telemetry.addData("KiCutoff = ", mPID.mKiCutoff);
+            }
+            return true;
+        }
     }
 
     // class that tries to correct systemic errors in ModernRoboticsI2cGyro output
