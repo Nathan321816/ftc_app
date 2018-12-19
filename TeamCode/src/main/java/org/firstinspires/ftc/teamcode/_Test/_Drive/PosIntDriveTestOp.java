@@ -32,8 +32,9 @@ class EncoderGyroPosInt extends SensorLib.PositionIntegrator {
     int mEncoderPrev;		// previous reading of motor encoder
     boolean mFirstLoop;
 
-    public EncoderGyroPosInt(OpMode opmode, HeadingSensor gyro, DcMotor encoderMotor, int countsPerRev, double wheelDiam)
+    public EncoderGyroPosInt(OpMode opmode, HeadingSensor gyro, DcMotor encoderMotor, int countsPerRev, double wheelDiam, Position initialPosn)
     {
+        super(initialPosn);
         mOpMode = opmode;
         mGyro = gyro;
         mEncoderMotor = encoderMotor;
@@ -215,7 +216,8 @@ public class PosIntDriveTestOp extends OpMode {
         // create Encoder/gyro-based PositionIntegrator to keep track of where we are on the field
         int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
         double wheelDiam = 4.0;		    // wheel diameter (in)
-        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1], countsPerRev, wheelDiam);
+        Position initialPosn = new Position(DistanceUnit.INCH, 0.0, 0.0, 0.0, 0);  // starting position
+        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1], countsPerRev, wheelDiam, initialPosn);
 
 
         // create an autonomous sequence with the steps to drive
