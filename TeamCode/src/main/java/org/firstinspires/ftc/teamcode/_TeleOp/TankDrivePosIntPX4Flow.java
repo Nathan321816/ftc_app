@@ -123,7 +123,7 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 
 		// read a frame of data from the camera to flush out any accumulated gook
 		mFlow.readIntegral();
-		
+
 		// make ToggleButton for reversing camera orientation
 		mReverseButton = new ToggleButton(false,2,0);
 	}

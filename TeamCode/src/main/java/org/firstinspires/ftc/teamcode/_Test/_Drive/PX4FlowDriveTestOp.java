@@ -39,8 +39,6 @@ public class PX4FlowDriveTestOp extends OpMode {
             mOpMode = opmode;
             mGyro = gyro;
             mFlow = flow;
-
-            mFlow.readIntegral();       // throw one away to flush out accumulated gook
         }
 
         public boolean loop() {
@@ -222,6 +220,7 @@ public class PX4FlowDriveTestOp extends OpMode {
 
         // get PX4Flow pixel-flow camera
         mFlow = hardwareMap.get(PX4Flow.class, "PX4Flow");
+        mFlow.readIntegral();       // throw one frame away to flush out any accumulated gook
 
         // create PX4Flow/gyro-based PositionIntegrator to keep track of where we are on the field
         Position initialPosn = new Position(DistanceUnit.INCH, 0.0, 0.0, 0.0, 0);  // starting position
