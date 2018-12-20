@@ -121,6 +121,9 @@ public class TankDrivePosIntPX4Flow extends OpMode {
 		// get PX4Flow pixel-flow camera
 		mFlow = hardwareMap.get(PX4Flow.class, "PX4Flow");
 
+		// read a frame of data from the camera to flush out any accumulated gook
+		mFlow.readIntegral();
+		
 		// make ToggleButton for reversing camera orientation
 		mReverseButton = new ToggleButton(false,2,0);
 	}
