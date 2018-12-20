@@ -13,6 +13,8 @@ import org.firstinspires.ftc.teamcode._Libs.HeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.PX4Flow;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
 
+import java.util.ArrayList;
+
 
 /**
  * simple example of using a Step that uses encoder and gyro input to drive to given field positions.
@@ -31,11 +33,14 @@ public class PX4FlowDriveTestOp extends OpMode {
         HeadingSensor mGyro;
         PX4Flow mFlow;
 
-        public PX4FlowGyroPosInt(OpMode opmode, PX4Flow flow, HeadingSensor gyro)
+        public PX4FlowGyroPosInt(OpMode opmode, PX4Flow flow, HeadingSensor gyro, Position initialPosn)
         {
+            super(initialPosn);
             mOpMode = opmode;
             mGyro = gyro;
             mFlow = flow;
+
+            mFlow.readIntegral();       // throw one away to flush out accumulated gook
         }
 
         public boolean loop() {
@@ -64,7 +69,7 @@ public class PX4FlowDriveTestOp extends OpMode {
             mPosInt.move(dy*scale, dx*scale, imuBearingDeg);
 
             if (mOpMode != null)
-                mOpMode.telemetry.addData("EncoderGyroPosInt position", String.format("%.2f", this.getX())+", " + String.format("%.2f", this.getY()));
+                mOpMode.telemetry.addData("PX4FlowGyroPosInt position", String.format("%.2f", this.getX())+", " + String.format("%.2f", this.getY()));
 
             return true;
         }
@@ -105,54 +110,68 @@ public class PX4FlowDriveTestOp extends OpMode {
     }
 
 
-    // Step: drive to given absolute field position using given EncoderGyroPosInt
-    class PosIntDriveToStep extends AutoLib.Step {
+    // guide step that uses a gyro and a position integrator to determine how to guide the robot to the target
+    class GyroPosIntGuideStep extends AutoLib.GyroGuideStep {
 
         OpMode mOpMode;
-        PX4FlowGyroPosInt mPosInt;
         Position mTarget;
-        AutoLib.GuidedTerminatedDriveStep mSubStep;
-        AutoLib.GyroGuideStep mGuideStep;
-        PositionTerminatorStep mTerminatorStep;
+        PX4FlowGyroPosInt mPosInt;
 
-        public PosIntDriveToStep(OpMode opmode, PX4FlowGyroPosInt posInt, DcMotor[] motors,
-                                 float power, Position target, double tolerance, boolean stop)
-        {
+        public GyroPosIntGuideStep(OpMode opmode, PX4FlowGyroPosInt posInt, Position target,
+                                   SensorLib.PID pid, ArrayList<AutoLib.SetPower> motorsteps, float power) {
+            super(opmode, 0, posInt.getGyro(), pid, motorsteps, power);
             mOpMode = opmode;
-            mPosInt = posInt;
             mTarget = target;
-
-            // create the sub-steps that will actually do the move
-            mGuideStep = new AutoLib.GyroGuideStep(mOpMode, 0, mPosInt.getGyro(), null, null, power);
-            mTerminatorStep = new PositionTerminatorStep(mOpMode, mPosInt, mTarget, tolerance);
-            mSubStep = new AutoLib.GuidedTerminatedDriveStep(mOpMode, mGuideStep, mTerminatorStep, motors);
+            mPosInt = posInt;
         }
 
         public boolean loop() {
-            super.loop();
-
             // run the EncoderGyroPosInt to update its position based on encoders and gyro
             mPosInt.loop();
 
             // update the GyroGuideStep heading to continue heading for the target
-            mGuideStep.setHeading((float)HeadingToTarget(mTarget, mPosInt.getPosition()));
+            super.setHeading((float) HeadingToTarget(mTarget, mPosInt.getPosition()));
 
-            // run the GuidedTerminatedDriveStep and return its result
-            return mSubStep.loop();
+            // run the underlying GyroGuideStep and return what it returns for "done" -
+            // currently, it leaves it up to the terminating step to end the Step
+            return super.loop();
         }
 
         private double HeadingToTarget(Position target, Position current) {
-            double headingXrad = Math.atan2((target.y-current.y), (target.x-current.x));  // pos CCW from X-axis
+            double headingXrad = Math.atan2((target.y - current.y), (target.x - current.x));  // pos CCW from X-axis
             double headingYdeg = SensorLib.Utils.wrapAngle(Math.toDegrees(headingXrad) - 90.0);
             if (mOpMode != null) {
-                mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget target", String.format("%.2f", target.x) + ", " + String.format("%.2f", target.y));
-                mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget current", String.format("%.2f", current.x) + ", " + String.format("%.2f", current.y));
-                mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget heading", String.format("%.2f", headingYdeg));
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget target", String.format("%.2f", target.x) + ", " + String.format("%.2f", target.y));
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget current", String.format("%.2f", current.x) + ", " + String.format("%.2f", current.y));
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget heading", String.format("%.2f", headingYdeg));
             }
             return headingYdeg;
         }
     }
 
+    // Step: drive to given absolute field position using given EncoderGyroPosInt
+    class PosIntDriveToStep extends AutoLib.GuidedTerminatedDriveStep {
+
+        OpMode mOpMode;
+        PX4FlowGyroPosInt mPosInt;
+        Position mTarget;
+        AutoLib.GyroGuideStep mGuideStep;
+        PositionTerminatorStep mTerminatorStep;
+
+        public PosIntDriveToStep(OpMode opmode, PX4FlowGyroPosInt posInt, DcMotor[] motors,
+                                 float power, SensorLib.PID pid, Position target, double tolerance, boolean stop)
+        {
+            super(opmode,
+                    new GyroPosIntGuideStep(opmode, posInt, target, pid, null, power),
+                    new PositionTerminatorStep(opmode, posInt, target, tolerance),
+                    motors);
+
+            mOpMode = opmode;
+            mPosInt = posInt;
+            mTarget = target;
+        }
+
+    }
 
 
     AutoLib.Sequence mSequence;             // the root of the sequence tree
@@ -161,14 +180,10 @@ public class PX4FlowDriveTestOp extends OpMode {
     BNO055IMUHeadingSensor mGyro;           // gyro to use for heading information
     boolean bSetup;                         // true when we're in "setup mode" where joysticks tweak parameters
     SensorLib.PID mPid;                     // PID controller for the sequence
+    SensorLib.PIDAdjuster mPidAdjuster;     // for interactive adjustment of PID parameters
     PX4FlowGyroPosInt mPosInt;              // Encoder/gyro-based position integrator to keep track of where we are
     PX4Flow mFlow;                          // the PX4Flow camera device
 
-    // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
-    float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
-    float Ki = 0.025f;         // ... integrator term
-    float Kd = 0;             // ... derivative term
-    float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
 
     @Override
     public void init() {
@@ -195,13 +210,22 @@ public class PX4FlowDriveTestOp extends OpMode {
         mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
         // create a PID controller for the sequence
+        // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
+        float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
+        float Ki = 0.025f;         // ... integrator term
+        float Kd = 0;             // ... derivative term
+        float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
         mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);    // make the object that implements PID control algorithm
+
+        // create a PID adjuster for interactive tweaking (see loop() below)
+        mPidAdjuster = new SensorLib.PIDAdjuster(this, mPid, gamepad1);
 
         // get PX4Flow pixel-flow camera
         mFlow = hardwareMap.get(PX4Flow.class, "PX4Flow");
 
         // create PX4Flow/gyro-based PositionIntegrator to keep track of where we are on the field
-        mPosInt = new PX4FlowGyroPosInt(this, mFlow, mGyro);
+        Position initialPosn = new Position(DistanceUnit.INCH, 0.0, 0.0, 0.0, 0);  // starting position
+        mPosInt = new PX4FlowGyroPosInt(this, mFlow, mGyro, initialPosn);
 
 
         // create an autonomous sequence with the steps to drive
@@ -218,23 +242,23 @@ public class PX4FlowDriveTestOp extends OpMode {
 
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
 
@@ -254,14 +278,7 @@ public class PX4FlowDriveTestOp extends OpMode {
         if (gamepad1.x)
             bSetup = false;     // X button: exit "setup mode"
         if (bSetup) {           // "setup mode"
-            // adjust PID parameters by joystick inputs
-            Kp -= (gamepad1.left_stick_y * 0.0001f);
-            Ki -= (gamepad1.right_stick_y * 0.0001f);
-            // update the parameters of the PID used by all Steps in this test
-            mPid.setK(Kp, Ki, Kd, KiCutoff);
-            // log updated values to the operator's console
-            telemetry.addData("Kp = ", Kp);
-            telemetry.addData("Ki = ", Ki);
+            mPidAdjuster.loop();
             return;
         }
 

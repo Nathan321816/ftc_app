@@ -12,13 +12,15 @@ import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.HeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
 
+import java.util.ArrayList;
+
 
 /**
  * simple example of using a Step that uses encoder and gyro input to drive to given field positions.
  * Created by phanau on 12/15/18
  */
 
-// simple example sequence that tests encoder+gyro-based position integration to drive along a given path
+// simple example sequence that tests encoder/gyro-based position integration to drive along a given path
 @Autonomous(name="Test: Pos Int Drive Test", group ="Test")
 //@Disabled
 public class PosIntDriveTestOp extends OpMode {
@@ -32,8 +34,9 @@ public class PosIntDriveTestOp extends OpMode {
         int mEncoderPrev;		// previous reading of motor encoder
         boolean mFirstLoop;
 
-        public EncoderGyroPosInt(OpMode opmode, HeadingSensor gyro, DcMotor encoderMotor)
+        public EncoderGyroPosInt(OpMode opmode, HeadingSensor gyro, DcMotor encoderMotor, int countsPerRev, double wheelDiam, Position initialPosn)
         {
+            super(initialPosn);
             mOpMode = opmode;
             mGyro = gyro;
             mEncoderMotor = encoderMotor;
@@ -61,7 +64,8 @@ public class PosIntDriveTestOp extends OpMode {
             double dist = (encoderDist * wheelDiam * Math.PI)/countsPerRev;
             this.move(dist, imuBearingDeg);
 
-            mOpMode.telemetry.addData("EncoderGyroPosInt position", String.format("%.2f", this.getX())+", " + String.format("%.2f", this.getY()));
+            if (mOpMode != null)
+                mOpMode.telemetry.addData("EncoderGyroPosInt position", String.format("%.2f", this.getX())+", " + String.format("%.2f", this.getY()));
 
             return true;
         }
@@ -91,60 +95,79 @@ public class PosIntDriveTestOp extends OpMode {
             super.loop();
             Position current = mPosInt.getPosition();
             double dist = Math.sqrt((mTarget.x-current.x)*(mTarget.x-current.x) + (mTarget.y-current.y)*(mTarget.y-current.y));
-            mOpMode.telemetry.addData("PositionTerminatorStep target", String.format("%.2f", mTarget.x)+", " + String.format("%.2f", mTarget.y));
-            mOpMode.telemetry.addData("PositionTerminatorStep current", String.format("%.2f", current.x)+", " + String.format("%.2f", current.y));
-            mOpMode.telemetry.addData("PositionTerminatorStep dist", String.format("%.2f", dist));
+            if (mOpMode != null) {
+                mOpMode.telemetry.addData("PositionTerminatorStep target", String.format("%.2f", mTarget.x) + ", " + String.format("%.2f", mTarget.y));
+                mOpMode.telemetry.addData("PositionTerminatorStep current", String.format("%.2f", current.x) + ", " + String.format("%.2f", current.y));
+                mOpMode.telemetry.addData("PositionTerminatorStep dist", String.format("%.2f", dist));
+            }
             boolean bDone = (dist < mTol);
             return bDone;
         }
     }
 
-
-    // Step: drive to given absolute field position using given EncoderGyroPosInt
-    class PosIntDriveToStep extends AutoLib.Step {
+    // guide step that uses a gyro and a position integrator to determine how to guide the robot to the target
+    class GyroPosIntGuideStep extends AutoLib.GyroGuideStep {
 
         OpMode mOpMode;
-        EncoderGyroPosInt mPosInt;
         Position mTarget;
-        AutoLib.GuidedTerminatedDriveStep mSubStep;
-        AutoLib.GyroGuideStep mGuideStep;
-        PositionTerminatorStep mTerminatorStep;
+        EncoderGyroPosInt mPosInt;
 
-        public PosIntDriveToStep(OpMode opmode, EncoderGyroPosInt posInt, DcMotor[] motors,
-                                 float power, Position target, double tolerance, boolean stop)
-        {
+        public GyroPosIntGuideStep(OpMode opmode, EncoderGyroPosInt posInt, Position target,
+                                   SensorLib.PID pid, ArrayList<AutoLib.SetPower> motorsteps, float power) {
+            super(opmode, 0, posInt.getGyro(), pid, motorsteps, power);
             mOpMode = opmode;
-            mPosInt = posInt;
             mTarget = target;
-
-            // create the sub-steps that will actually do the move
-            mGuideStep = new AutoLib.GyroGuideStep(mOpMode, 0, mPosInt.getGyro(), null, null, power);
-            mTerminatorStep = new PositionTerminatorStep(mOpMode, mPosInt, mTarget, tolerance);
-            mSubStep = new AutoLib.GuidedTerminatedDriveStep(mOpMode, mGuideStep, mTerminatorStep, motors);
+            mPosInt = posInt;
         }
 
         public boolean loop() {
-            super.loop();
-
             // run the EncoderGyroPosInt to update its position based on encoders and gyro
             mPosInt.loop();
 
             // update the GyroGuideStep heading to continue heading for the target
-            mGuideStep.setHeading((float)HeadingToTarget(mTarget, mPosInt.getPosition()));
+            super.setHeading((float) HeadingToTarget(mTarget, mPosInt.getPosition()));
 
-            // run the GuidedTerminatedDriveStep and return its result
-            return mSubStep.loop();
+            // run the underlying GyroGuideStep and return what it returns for "done" -
+            // currently, it leaves it up to the terminating step to end the Step
+            return super.loop();
         }
 
         private double HeadingToTarget(Position target, Position current) {
-            double headingXrad = Math.atan2((target.y-current.y), (target.x-current.x));  // pos CCW from X-axis
+            double headingXrad = Math.atan2((target.y - current.y), (target.x - current.x));  // pos CCW from X-axis
             double headingYdeg = SensorLib.Utils.wrapAngle(Math.toDegrees(headingXrad) - 90.0);
-            mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget target", String.format("%.2f", target.x)+", " + String.format("%.2f", target.y));
-            mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget current", String.format("%.2f", current.x)+", " + String.format("%.2f", current.y));
-            mOpMode.telemetry.addData("PosIntDriveToStep.HeadingToTarget heading", String.format("%.2f", headingYdeg));
+            if (mOpMode != null) {
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget target", String.format("%.2f", target.x) + ", " + String.format("%.2f", target.y));
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget current", String.format("%.2f", current.x) + ", " + String.format("%.2f", current.y));
+                mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget heading", String.format("%.2f", headingYdeg));
+            }
             return headingYdeg;
         }
     }
+
+    // Step: drive to given absolute field position using given EncoderGyroPosInt
+    class PosIntDriveToStep extends AutoLib.GuidedTerminatedDriveStep {
+
+        OpMode mOpMode;
+        EncoderGyroPosInt mPosInt;
+        Position mTarget;
+        AutoLib.GyroGuideStep mGuideStep;
+        PositionTerminatorStep mTerminatorStep;
+
+        public PosIntDriveToStep(OpMode opmode, EncoderGyroPosInt posInt, DcMotor[] motors,
+                                 float power, SensorLib.PID pid, Position target, double tolerance, boolean stop)
+        {
+            super(opmode,
+                    new GyroPosIntGuideStep(opmode, posInt, target, pid, null, power),
+                    new PositionTerminatorStep(opmode, posInt, target, tolerance),
+                    motors);
+
+            mOpMode = opmode;
+            mPosInt = posInt;
+            mTarget = target;
+        }
+
+    }
+
 
 
     AutoLib.Sequence mSequence;             // the root of the sequence tree
@@ -154,12 +177,7 @@ public class PosIntDriveTestOp extends OpMode {
     boolean bSetup;                         // true when we're in "setup mode" where joysticks tweak parameters
     SensorLib.PID mPid;                     // PID controller for the sequence
     EncoderGyroPosInt mPosInt;              // Encoder/gyro-based position integrator to keep track of where we are
-
-    // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
-    float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
-    float Ki = 0.025f;         // ... integrator term
-    float Kd = 0;             // ... derivative term
-    float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
+    SensorLib.PIDAdjuster mPidAdjuster;     // for interactive adjustment of PID parameters
 
     @Override
     public void init() {
@@ -186,10 +204,21 @@ public class PosIntDriveTestOp extends OpMode {
         mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
 
         // create a PID controller for the sequence
+        // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
+        float Kp = 0.02f;        // motor power proportional term correction per degree of deviation
+        float Ki = 0.025f;         // ... integrator term
+        float Kd = 0;             // ... derivative term
+        float KiCutoff = 10.0f;    // maximum angle error for which we update integrator
         mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);    // make the object that implements PID control algorithm
 
+        // create a PID adjuster for interactive tweaking (see loop() below)
+        mPidAdjuster = new SensorLib.PIDAdjuster(this, mPid, gamepad1);
+
         // create Encoder/gyro-based PositionIntegrator to keep track of where we are on the field
-        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1]);
+        int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
+        double wheelDiam = 4.0;		    // wheel diameter (in)
+        Position initialPosn = new Position(DistanceUnit.INCH, 0.0, 0.0, 0.0, 0);  // starting position
+        mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1], countsPerRev, wheelDiam, initialPosn);
 
 
         // create an autonomous sequence with the steps to drive
@@ -206,23 +235,23 @@ public class PosIntDriveTestOp extends OpMode {
 
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
         for (int i=0; i<3; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower,
+            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                     new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
         }
 
@@ -242,14 +271,7 @@ public class PosIntDriveTestOp extends OpMode {
         if (gamepad1.x)
             bSetup = false;     // X button: exit "setup mode"
         if (bSetup) {           // "setup mode"
-            // adjust PID parameters by joystick inputs
-            Kp -= (gamepad1.left_stick_y * 0.0001f);
-            Ki -= (gamepad1.right_stick_y * 0.0001f);
-            // update the parameters of the PID used by all Steps in this test
-            mPid.setK(Kp, Ki, Kd, KiCutoff);
-            // log updated values to the operator's console
-            telemetry.addData("Kp = ", Kp);
-            telemetry.addData("Ki = ", Ki);
+            mPidAdjuster.loop();
             return;
         }
 
