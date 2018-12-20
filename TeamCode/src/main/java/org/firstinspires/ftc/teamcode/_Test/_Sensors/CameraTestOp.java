@@ -7,6 +7,7 @@
 package org.firstinspires.ftc.teamcode._Test._Sensors;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import android.hardware.Camera;
@@ -15,7 +16,7 @@ import org.firstinspires.ftc.teamcode._Libs.CameraLib;
 
 
 @Autonomous(name="Test: CameraLib Test 1", group ="Test")
-//@Disabled
+@Disabled
 public class CameraTestOp extends OpMode {
 
     int mLoopCount;
