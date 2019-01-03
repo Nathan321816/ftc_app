@@ -55,6 +55,10 @@ public class TestMotorEncoders extends OpMode {
     }
 
     public void loop() {
+        // post some feedback from the motors to the operator console
+        telemetry.addData("count 1", mMotor1.getCurrentPosition());
+        telemetry.addData("count 2", mMotor2.getCurrentPosition());
+
         // until we're done, keep looping through the current Step(s)
         if (!bDone)
             bDone = mSequence.loop();       // returns true when we're done
