@@ -39,11 +39,16 @@ public class TestMotorEncoders extends OpMode {
         // create the root Sequence for this autonomous OpMode
         mSequence = new AutoLib.LinearSequence();
 
+        // test holding position at full power (simulating rover hanging from lander)
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, 1.0, 0, false));     // hold initial position
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, 1.0, 0, false));     // hold initial position
+        mSequence.add(new AutoLib.LogTimeStep(this, "hang", 10.0));          // ... for this time
+
         // add a Step sequence that rotates a motor N revs forward and then backward to starting position
         double power = 0.4;
         int countPerTurn = 28*20;    // shaft encoder at 28 ppr * 20:1 gearbox
         boolean stop = true;
-        int turns = 3;
+        int turns = 10;
         mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, power, turns*countPerTurn, stop));      // forward
         mSequence.add(new AutoLib.LogTimeStep(this, "wait", 1.0));
         mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, power, -turns*countPerTurn, stop));     // return to initial position
