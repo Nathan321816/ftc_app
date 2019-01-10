@@ -39,11 +39,6 @@ public class TestMotorEncoders extends OpMode {
         // create the root Sequence for this autonomous OpMode
         mSequence = new AutoLib.LinearSequence();
 
-        // test holding position at full power (simulating rover hanging from lander)
-        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, 1.0, 0, false));     // hold initial position
-        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, 1.0, 0, false));     // hold initial position
-        mSequence.add(new AutoLib.LogTimeStep(this, "hang", 10.0));          // ... for this time
-
         // add a Step sequence that rotates a motor N revs forward and then backward to starting position
         double power = 0.4;
         int countPerTurn = 28*20;    // shaft encoder at 28 ppr * 20:1 gearbox
@@ -57,6 +52,17 @@ public class TestMotorEncoders extends OpMode {
         mSequence.add(new AutoLib.LogTimeStep(this, "wait", 1.0));
         mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, power, -turns*countPerTurn, stop));     // return to initial position
 
+        // test holding position at full power within a sequence (simulating rover hanging from lander).
+        // the motors all release when stop is hit, but here we explicitly release them after a given time just to test that action.
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, 1.0, 0, false));     // hold final position
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, 1.0, 0, false));     // hold final position
+        mSequence.add(new AutoLib.LogTimeStep(this, "hang", 10.0));          // ... for this time
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor1, 0.0, 0, true));      // release motor
+        mSequence.add(new AutoLib.EncoderMotorStep(mMotor2, 0.0, 0, true));      // release motor
+
+        // test using position holding step to lock motor =immediately= from now (init) until start
+        new AutoLib.EncoderMotorStep(mMotor1, 1.0, 0, false).loop();        // create step and run it once
+        new AutoLib.EncoderMotorStep(mMotor2, 1.0, 0, false).loop();        // create step and run it once
     }
 
     public void loop() {
