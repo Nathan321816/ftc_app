@@ -34,6 +34,9 @@ public class PosIntDriveTestOp extends OpMode {
         int mEncoderPrev;		// previous reading of motor encoder
         boolean mFirstLoop;
 
+        int mCountsPerRev;
+        double mWheelDiam;
+
         public EncoderGyroPosInt(OpMode opmode, HeadingSensor gyro, DcMotor encoderMotor, int countsPerRev, double wheelDiam, Position initialPosn)
         {
             super(initialPosn);
@@ -41,6 +44,8 @@ public class PosIntDriveTestOp extends OpMode {
             mGyro = gyro;
             mEncoderMotor = encoderMotor;
             mFirstLoop = true;
+            mCountsPerRev = countsPerRev;
+            mWheelDiam = wheelDiam;
         }
 
         public boolean loop() {
@@ -59,9 +64,7 @@ public class PosIntDriveTestOp extends OpMode {
             double imuBearingDeg = mGyro.getHeading();
 
             // update accumulated field position
-            final int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
-            final double wheelDiam = 4.0;		// wheel diameter (in)
-            double dist = (encoderDist * wheelDiam * Math.PI)/countsPerRev;
+            double dist = (encoderDist * mWheelDiam * Math.PI)/mCountsPerRev;
             this.move(dist, imuBearingDeg);
 
             if (mOpMode != null)
