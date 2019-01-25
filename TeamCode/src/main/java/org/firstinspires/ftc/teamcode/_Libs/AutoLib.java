@@ -174,6 +174,71 @@ public class AutoLib {
         }
     }
 
+    // a Step that implements an n-way switch construct --
+    // you derive your Step from this one and override the caseTest() function to implement your switch logic.
+    static public class SwitchStep extends Step {
+        Step[] mCases;
+        boolean mOnce;
+        int mCase;
+
+        public SwitchStep() {}
+
+        public SwitchStep(Step[] cases, boolean once) {
+            mCases = cases;
+            mOnce = once;
+            mCase = -1;     // undefined
+        }
+
+        // if "once" is true, we run this code only until it returns a non-negative case and remember the result thereafter.
+        // otherwise, this code is run every time through the loop.
+        int caseTest() {
+            return -1;      // undefined
+        }
+
+        public boolean loop() {
+            // evaluate the case to run -- either once (until we get a valid result) or every time
+            if (mOnce & mCase<0 || !mOnce)
+                mCase = caseTest();
+
+            // run the indicated case iff we have a valid case value and return its result, else return false (not done)
+            return mCase>=0 ? mCases[mCase].loop() : false;
+        }
+
+        public void reset() {
+            super.reset();
+            for (Step s : mCases )
+                s.reset();
+            mCase = -1;     // undefined
+        }
+    }
+
+    static public interface ReturnInteger {
+        public void setInteger(int value);
+    }
+
+    static public class SwitchStep2 extends SwitchStep implements ReturnInteger {
+        Step mCaseStep;     // the Step that sets the case to run
+
+        public SwitchStep2(Step caseStep, Step[] cases, boolean once) {
+            super(cases, once);
+            mCaseStep = caseStep;
+        }
+
+        // callback from caseStep to return and set the case value
+        public void setInteger(int value) {
+            mCase = value;
+        }
+
+        // run caseStep.loop() and return the value it sent back to us via setInteger.
+        // until it does set a valid value, we will return -1 (undefined),
+        // which causes the base class loop() function to do nothing.
+        int caseTest() {
+            mCaseStep.loop();
+            return mCase;
+        }
+    }
+
+
     // a Step that implements a do-until construct --
     // repeat the "do" Step until the "until" Step returns done.
     // reset the "do" Step each time "until" Step says do it again.
