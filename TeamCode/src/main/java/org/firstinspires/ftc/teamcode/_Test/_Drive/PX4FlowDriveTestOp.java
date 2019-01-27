@@ -240,37 +240,23 @@ public class PX4FlowDriveTestOp extends OpMode {
         float timeout = 2.0f;   // seconds
 
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
-        final int nCycles = 1;
-        for (int i=0; i<nCycles; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
-        }
-        for (int i=0; i<nCycles; i++) {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 36, 36, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 0, 24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 48, 0, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
-        }
-        // drive a circle (approximated by an N-sided polygon)
-        final int circleSegs = 12;
-        final float circleRadius = 24.0f;
-        for (int i=0; i<=circleSegs; i++) {
-            double angle = 2*Math.PI*i/circleSegs;
-            double x = circleRadius*(1.0 - Math.cos(angle));
-            double y = circleRadius*(1.0 + Math.sin(angle));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, x, y, 0, 0), tol, false));
-        }
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 36, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,                   // do this move backwards!
+                new Position(DistanceUnit.INCH, 36, 0, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 0, 0., 0), tol, false));
+
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, -movePower, mPid,
+                new Position(DistanceUnit.INCH, 36, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, -movePower, mPid,                   // do this move backwards!
+                new Position(DistanceUnit.INCH, 36, 0, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 0, 0., 0), tol, false));
 
         // turn to heading zero to finish up
         mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));

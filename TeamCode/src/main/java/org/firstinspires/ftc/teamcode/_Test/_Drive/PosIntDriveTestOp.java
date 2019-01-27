@@ -243,6 +243,15 @@ public class PosIntDriveTestOp extends OpMode {
                 new Position(DistanceUnit.INCH, 0, 36, 0., 0), tol, false));
         mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
                 new Position(DistanceUnit.INCH, 36, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,                   // do this move backwards!
+                new Position(DistanceUnit.INCH, 36, 0, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 0, 0., 0), tol, false));
+
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, -movePower, mPid,
+                new Position(DistanceUnit.INCH, 36, 36, 0., 0), tol, false));
         mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, -movePower, mPid,                   // do this move backwards!
                 new Position(DistanceUnit.INCH, 36, 0, 0., 0), tol, false));
         mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
