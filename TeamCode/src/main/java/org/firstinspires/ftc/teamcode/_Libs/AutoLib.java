@@ -525,51 +525,57 @@ public class AutoLib {
         return ((x-x0)/(x1-x0))*(y1-y0) + y0;
     }
 
-    // return normalization factor that makes max magnitude of any argument f
+    // return normalization factor that makes max magnitude of any argument the magnitude of f
     static public float normalize(float f, float a, float b)
     {
+        float af = Math.abs(f);
         float m = Math.max(Math.abs(a), Math.abs(b));
-        return (m > f) ? f/m : 1.0f;
+        return (m > af) ? af/m : 1.0f;
     }
     static public float normalize(float a, float b) { return normalize(1.0f, a, b); }
 
     static public float normalize(float f, float a, float b, float c, float d)
     {
+        float af = Math.abs(f);
         float m = Math.max(Math.max(Math.abs(a), Math.abs(b)), Math.max(Math.abs(c), Math.abs(d)));
-        return (m > f) ? f/m : 1.0f;
+        return (m > af) ? af/m : 1.0f;
     }
     static public float normalize(float a, float b, float c, float d) { return normalize(1.0f, a, b, c, d); }
 
     // return normalization factor that makes max magnitude of any argument 1
     static public double normalize(double f, double a, double b)
     {
+        double af = Math.abs(f);
         double m = Math.max(Math.abs(a), Math.abs(b));
-        return (m > f) ? f/m : 1.0;
+        return (m > af) ? af/m : 1.0;
     }
     static public double normalize(double a, double b) { return normalize(1.0, a, b); }
 
     static public double normalize(double f, double a, double b, double c, double d)
     {
+        double af = Math.abs(f);
         double m = Math.max(Math.max(Math.abs(a), Math.abs(b)), Math.max(Math.abs(c), Math.abs(d)));
-        return (m > f) ? f/m : 1.0;
+        return (m > af) ? af/m : 1.0;
     }
     static public double normalize(double a, double b, double c, double d) { return normalize(1.0, a, b, c, d); }
 
     static public float normalize(float f, float[] a)
     {
+        float af = Math.abs(f);
         float m = 0;
         for (float x : a)
             m = Math.max(m, Math.abs(x));
-        return (m > f) ? f/m : 1.0f;
+        return (m > af) ? af/m : 1.0f;
     }
     static public float normalize(float[] a) { return normalize(1.0f, a); }
 
     static public double normalize(double f, double[] a)
     {
+        double af = Math.abs(f);
         double m = 0;
         for (double x : a)
             m = Math.max(m, Math.abs(x));
-        return (m > f) ? f/m : 1.0;
+        return (m > af) ? af/m : 1.0;
     }
     static public double normalize(double[] a) { return normalize(1.0, a); }
 
@@ -663,7 +669,8 @@ public class AutoLib {
             float heading = mGyro.getHeading();     // get latest reading from direction sensor
             // convention is positive angles CCW, wrapping from 359-0
 
-            float error = SensorLib.Utils.wrapAngle(heading-mDirection);   // deviation from desired heading
+            float backwards = (mPower < 0) ? 180 : 0;       // if we're going backwards, reverse the gyro reading
+            float error = SensorLib.Utils.wrapAngle(heading + backwards - mDirection);   // deviation from desired heading
             // deviations to left are positive, to right are negative
 
             // compute delta time since last call -- used for integration time of PID step
@@ -693,6 +700,9 @@ public class AutoLib {
             // log some data
             if (mOpMode != null) {
                 mOpMode.telemetry.addData("heading ", heading);
+                mOpMode.telemetry.addData("error ", error);
+                mOpMode.telemetry.addData("correction ", correction);
+                mOpMode.telemetry.addData("mPower ", mPower);
                 mOpMode.telemetry.addData("left power ", leftPower);
                 mOpMode.telemetry.addData("right power ", rightPower);
             }

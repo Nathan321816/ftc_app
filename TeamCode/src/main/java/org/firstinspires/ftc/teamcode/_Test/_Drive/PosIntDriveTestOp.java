@@ -114,7 +114,6 @@ public class PosIntDriveTestOp extends OpMode {
         OpMode mOpMode;
         Position mTarget;
         EncoderGyroPosInt mPosInt;
-        boolean mBackwards;
 
         public GyroPosIntGuideStep(OpMode opmode, EncoderGyroPosInt posInt, Position target,
                                    SensorLib.PID pid, ArrayList<AutoLib.SetPower> motorsteps, float power) {
@@ -122,7 +121,6 @@ public class PosIntDriveTestOp extends OpMode {
             mOpMode = opmode;
             mTarget = target;
             mPosInt = posInt;
-            mBackwards = (power < 0);
         }
 
         public boolean loop() {
@@ -130,10 +128,7 @@ public class PosIntDriveTestOp extends OpMode {
             mPosInt.loop();
 
             // update the GyroGuideStep heading to continue heading for the target
-            float heading = (float) HeadingToTarget(mTarget, mPosInt.getPosition());
-            if (mBackwards)
-                heading = SensorLib.Utils.wrapAngle(heading + 180.0f);
-            super.setHeading(heading);
+            super.setHeading((float) HeadingToTarget(mTarget, mPosInt.getPosition()));
 
             // run the underlying GyroGuideStep and return what it returns for "done" -
             // currently, it leaves it up to the terminating step to end the Step
@@ -141,8 +136,8 @@ public class PosIntDriveTestOp extends OpMode {
         }
 
         private double HeadingToTarget(Position target, Position current) {
-            double headingXrad = Math.atan2((target.y - current.y), (target.x - current.x));  // pos CCW from X-axis
-            double headingYdeg = SensorLib.Utils.wrapAngle(Math.toDegrees(headingXrad) - 90.0);
+            double headingXrad = Math.atan2((target.y - current.y), (target.x - current.x));        // pos CCW from X-axis
+            double headingYdeg = SensorLib.Utils.wrapAngle(Math.toDegrees(headingXrad) - 90.0);     // pos CCW from Y-axis
             if (mOpMode != null) {
                 mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget target", String.format("%.2f", target.x) + ", " + String.format("%.2f", target.y));
                 mOpMode.telemetry.addData("GyroPosIntGuideStep.HeadingToTarget current", String.format("%.2f", current.x) + ", " + String.format("%.2f", current.y));
@@ -210,7 +205,7 @@ public class PosIntDriveTestOp extends OpMode {
         mGyro = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
         mGyro.init(7);  // orientation of REV hub in my ratbot
         mGyro.setDegreesPerTurn(355.0f);     // appears that's what my IMU does ...
-        mGyro.setHeadingOffset(135.0f);     // example: SW corner of lander
+        mGyro.setHeadingOffset(0.0f);        // example: facing due north along field Y-axis (positive CCW)
 
         // create a PID controller for the sequence
         // parameters of the PID controller for this sequence - assumes 20-gear motors (fast)
@@ -226,8 +221,8 @@ public class PosIntDriveTestOp extends OpMode {
         // create Encoder/gyro-based PositionIntegrator to keep track of where we are on the field
         int countsPerRev = 28*20;		// for 20:1 gearbox motor @ 28 counts/motorRev
         double wheelDiam = 4.0;		    // wheel diameter (in)
-        Position initialPosn = new Position(DistanceUnit.INCH, -12.0, -12.0, 0.0, 0);
-            // example starting position: SW side of lander
+        Position initialPosn = new Position(DistanceUnit.INCH, 0.0, 0.0, 0.0, 0);
+            // example starting position: at origin of field
         mPosInt = new EncoderGyroPosInt(this, mGyro, mMotors[1], countsPerRev, wheelDiam, initialPosn);
 
 
@@ -244,29 +239,17 @@ public class PosIntDriveTestOp extends OpMode {
         float timeout = 2.0f;   // seconds
 
         // add a bunch of position integrator "legs" to the sequence -- uses absolute field coordinate system in inches
-        {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -48, -24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -24, -48, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -54, -54, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 24, -54, 0, 0), tol, false));
-        }
-        {
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -54, -54, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -24, -48, 0, 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, -48, -24, 0., 0), tol, false));
-            mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
-                    new Position(DistanceUnit.INCH, 0, 0, 0, 0), tol, false));
-        }
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 36, 36, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, -movePower, mPid,                   // do this move backwards!
+                new Position(DistanceUnit.INCH, 36, 0, 0., 0), tol, false));
+        mSequence.add(new PosIntDriveToStep(this, mPosInt, mMotors, movePower, mPid,
+                new Position(DistanceUnit.INCH, 0, 0, 0., 0), tol, false));
 
         // turn to heading zero to finish up
-        //mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
+        mSequence.add(new AutoLib.AzimuthTolerancedTurnStep(this, 0, mGyro, mPid, mMotors, turnPower, tol, timeout));
         mSequence.add(new AutoLib.MoveByTimeStep(mMotors, 0, 0, true));     // stop all motors
 
         // start out not-done
