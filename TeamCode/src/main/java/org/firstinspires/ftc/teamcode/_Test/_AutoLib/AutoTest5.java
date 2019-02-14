@@ -15,15 +15,28 @@ class Context {
 }
 
 // example of a Step that generates some data to be communicated to subsequent Steps
-class DataSourceStep extends AutoLib.Step {
+class DataSourceStep1 extends AutoLib.Step {
     Context _ctx;
-    public DataSourceStep(Context ctx) {
+    public DataSourceStep1(Context ctx) {
         _ctx = ctx;
     }
     public boolean loop() {
         _ctx.value1 = 1;
         _ctx.value2 = "two";
         _ctx.value3 = 3.0f;
+        return true;    // done
+    }
+}
+
+// example of another Step that updates some of the data communicated to subsequent Steps
+class DataSourceStep2 extends AutoLib.Step {
+    Context _ctx;
+    public DataSourceStep2(Context ctx) {
+        _ctx = ctx;
+    }
+    public boolean loop() {
+        _ctx.value2 = "twenty";
+        _ctx.value3 = 30.0f;
         return true;    // done
     }
 }
@@ -93,7 +106,11 @@ public class AutoTest5 extends OpMode {
         Context ctx = new Context();
 
         // populate the Sequence with a Data generating Step and some Steps that then use that data
-        mSequence.add(new DataSourceStep(ctx));
+        mSequence.add(new DataSourceStep1(ctx));        // create some data used by subsequent steps
+        mSequence.add(new DataUserStep1(this, 5, ctx));
+        mSequence.add(new DataUserStep2(this, 5, ctx));
+        mSequence.add(new DataUserStep3(this, 5, ctx));
+        mSequence.add(new DataSourceStep2(ctx));        // update some of the data used by subsequent steps
         mSequence.add(new DataUserStep1(this, 5, ctx));
         mSequence.add(new DataUserStep2(this, 5, ctx));
         mSequence.add(new DataUserStep3(this, 5, ctx));
