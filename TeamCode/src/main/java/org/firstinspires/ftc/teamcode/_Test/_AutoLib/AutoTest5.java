@@ -110,10 +110,14 @@ public class AutoTest5 extends OpMode {
         mSequence.add(new DataUserStep1(this, 5, ctx));
         mSequence.add(new DataUserStep2(this, 5, ctx));
         mSequence.add(new DataUserStep3(this, 5, ctx));
-        mSequence.add(new DataSourceStep2(ctx));        // update some of the data used by subsequent steps
-        mSequence.add(new DataUserStep1(this, 5, ctx));
-        mSequence.add(new DataUserStep2(this, 5, ctx));
-        mSequence.add(new DataUserStep3(this, 5, ctx));
+
+        // update some of the data used by subsequent steps, which run concurrently this time
+        mSequence.add(new DataSourceStep2(ctx));
+        AutoLib.ConcurrentSequence cs1 = new AutoLib.ConcurrentSequence();
+        cs1.add(new DataUserStep1(this, 5, ctx));
+        cs1.add(new DataUserStep2(this, 5, ctx));
+        cs1.add(new DataUserStep3(this, 5, ctx));
+        mSequence.add(cs1);
 
         // start out not-done
         bDone = false;
