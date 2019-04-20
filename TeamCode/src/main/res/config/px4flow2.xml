@@ -1,6 +1,0 @@
-<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<Robot type="FirstInspires-FTC">
-    <DeviceInterfaceModule name="Device Interface Module 1" serialNumber="AL00VGRU">
-        <PX4Flow name="PX4Flow" port="0" />
-    </DeviceInterfaceModule>
-</Robot>
